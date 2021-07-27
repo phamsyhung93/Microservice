@@ -63,8 +63,7 @@ public class JwtUsernameAndPasswordAuthenticationFilter extends UsernamePassword
     // Sau khi xác thực thành công, hãy tạo mã thông báo.
     // 'Auth' được chuyển cho thành côngAuthentication () là người dùng được xác thực hiện tại.
     @Override
-    protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
-                                            Authentication auth) throws IOException, ServletException {
+    protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication auth) throws IOException, ServletException {
 
         Long now = System.currentTimeMillis();
         String token = Jwts.builder()
@@ -74,7 +73,7 @@ public class JwtUsernameAndPasswordAuthenticationFilter extends UsernamePassword
                 .claim("authorities", auth.getAuthorities().stream()
                         .map(GrantedAuthority::getAuthority).collect(Collectors.toList()))
                 .setIssuedAt(new Date(now))
-                .setExpiration(new Date(now + jwtConfig.getExpiration() * 1000))  // in milliseconds
+                .setExpiration(new Date(now + jwtConfig.getExpiration() * 1000))  // tính bằng mili giây
                 .signWith(SignatureAlgorithm.HS512, jwtConfig.getSecret().getBytes())
                 .compact();
 
