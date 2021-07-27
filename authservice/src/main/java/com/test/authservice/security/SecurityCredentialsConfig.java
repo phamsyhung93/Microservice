@@ -12,39 +12,42 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
-@EnableWebSecurity
+@EnableWebSecurity //Bật cấu hình bảo mật. Chú thích này biểu thị cấu hình cho bảo mật spring
 public class SecurityCredentialsConfig extends WebSecurityConfigurerAdapter{
     @Autowired
-    private UserDetailsService userDetailsService;
+    private UserDetailsService detailsService;
 
     @Autowired
     private JwtConfig jwtConfig;
 
     @Override
-    protected void configure(HttpSecurity http) throws Exception {
+    protected void configure(HttpSecurity   http) throws Exception {
         http
                 .csrf().disable()
-                // make sure we use stateless session; session won't be used to store user's state.
+                // đảm bảo rằng chúng tôi sử dụng phiên không trạng thái; phiên sẽ không được sử dụng để lưu trữ trạng thái của người dùng.
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
-                // handle an authorized attempts
+                // xử lý các nỗ lực được ủy quyền
                 .exceptionHandling().authenticationEntryPoint((req, rsp, e) -> rsp.sendError(HttpServletResponse.SC_UNAUTHORIZED))
                 .and()
-                // Add a filter to validate user credentials and add token in the response header
-                // What's the authenticationManager()?
-                // An object provided by WebSecurityConfigurerAdapter, used to authenticate the user passing user's credentials
-                // The filter needs this auth manager to authenticate the user.  .addFilter(new JwtUsernameAndPasswordAuthenticationFilter(authenticationManager(), jwtConfig))
+                // Thêm bộ lọc để xác thực thông tin đăng nhập của người dùng và thêm mã thông báo vào tiêu đề phản hồi
+                // Xác thựcManager () là gì?
+                // Một đối tượng được cung cấp bởi WebSecurityConfigurerAdapter, được sử dụng để xác thực người dùng chuyển thông tin đăng nhập của người dùng
+                // Bộ lọc cần trình quản lý xác thực này để xác thực người dùng.
+                .addFilter(new JwtUsernameAndPasswordAuthenticationFilter(authenticationManager(), jwtConfig))
                 .authorizeRequests()
-                // allow all POST requests
+                // cho phép tất cả các yêu cầu POST
                 .antMatchers(HttpMethod.POST, jwtConfig.getUri()).permitAll()
-                // any other requests must be authenticated
+                // bất kỳ yêu cầu nào khác phải được xác thực
                 .anyRequest().authenticated();
     }
 
-    // Spring has UserDetailsService interface, which can be overriden to provide our implementation for fetching user from database (or any other source).
-    // The UserDetailsService object is used by the auth manager to load the user from database. // In addition, we need to define the password encoder also. So, auth manager can compare and verify passwords.  @Override
+    // Spring có giao diện UserDetailsService, có thể được ghi đè để cung cấp triển khai của chúng tôi để tìm nạp người dùng từ cơ sở dữ liệu (hoặc bất kỳ nguồn nào khác).
+    // Đối tượng UserDetailsService được sử dụng bởi trình quản lý xác thực để tải người dùng từ cơ sở dữ liệu.
+    // Ngoài ra, chúng ta cũng cần xác định bộ mã hóa mật khẩu. Vì vậy, người quản lý xác thực có thể so sánh và xác minh mật khẩu.
+    @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder());
+        auth.userDetailsService(detailsService).passwordEncoder(passwordEncoder());
     }
 
     @Bean

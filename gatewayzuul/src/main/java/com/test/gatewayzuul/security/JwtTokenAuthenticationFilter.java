@@ -29,23 +29,25 @@ public class JwtTokenAuthenticationFilter extends OncePerRequestFilter  {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
 
-        // 1. get the authentication header. Tokens are supposed to be passed in the authentication header
+        // 1. lấy tiêu đề xác thực. Các mã thông báo phải được chuyển trong tiêu đề xác thực
         String header = request.getHeader(jwtConfig.getHeader());
 
-        // 2. validate the header and check the prefix
+        // 2. xác thực tiêu đề và kiểm tra tiền tố
         if(header == null || !header.startsWith(jwtConfig.getPrefix())) {
             chain.doFilter(request, response);        // If not valid, go to the next filter.
             return;
         }
 
-        // If there is no token provided and hence the user won't be authenticated.
-        // It's Ok. Maybe the user accessing a public path or asking for a token.
-        // All secured paths that needs a token are already defined and secured in config class.
-        // And If user tried to access without access token, then he won't be authenticated and an exception will be thrown.       // 3. Get the token
+        // Nếu không có mã thông báo nào được cung cấp và do đó người dùng sẽ không được xác thực.
+        // Ổn mà. Có thể người dùng đang truy cập đường dẫn công khai hoặc yêu cầu mã thông báo.
+        // Tất cả các đường dẫn bảo mật cần mã thông báo đã được xác định và bảo mật trong lớp cấu hình.
+        // Và Nếu người dùng cố gắng truy cập mà không có mã thông báo truy cập, thì anh ta sẽ không được xác thực và một ngoại lệ sẽ được ném ra.
+        // 3.Lấy mã thông báo
         String token = header.replace(jwtConfig.getPrefix(), "");
 
-        try {  // exceptions might be thrown in creating the claims if for example the token is expired
-            // 4. Validate the token
+        try {
+            // các ngoại lệ có thể được đưa ra khi tạo các xác nhận quyền sở hữu nếu ví dụ: mã thông báo đã hết hạn
+            // 4. Xác thực mã thông báo
             Claims claims = Jwts.parser()
                     .setSigningKey(jwtConfig.getSecret().getBytes())
                     .parseClaimsJws(token)
@@ -56,22 +58,23 @@ public class JwtTokenAuthenticationFilter extends OncePerRequestFilter  {
                 @SuppressWarnings("unchecked")
                 List<String> authorities = (List<String>) claims.get("authorities");
 
-                // 5. Create auth object
-                // UsernamePasswordAuthenticationToken: A built-in object, used by spring to represent the current authenticated / being authenticated user. // It needs a list of authorities, which has type of GrantedAuthority interface, where SimpleGrantedAuthority is an implementation of that interface
+                // 5. Tạo đối tượng xác thực
+                // UsernamePasswordAuthenticationToken: Một đối tượng tích hợp, được sử dụng bởi spring để đại diện cho người dùng được xác thực / đang được xác thực hiện tại.
+                // Nó cần một danh sách các cơ quan có thẩm quyền, có loại giao diện GrantedAuthority, trong đó SimpleGrantedAuthority là một triển khai của giao diện đó
                 UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
                 username, null, authorities.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList()));
 
-                // 6. Authenticate the user
-                // Now, user is authenticated
+                // 6. Xác thực người dùng
+                // Bây giờ, người dùng đã được xác thực
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }
 
         } catch (Exception e) {
-            // In case of failure. Make sure it's clear; so guarantee user won't be authenticated
+            // Trong trường hợp không thành công. Đảm bảo rằng nó rõ ràng; vì vậy đảm bảo người dùng sẽ không được xác thực
             SecurityContextHolder.clearContext();
         }
 
-        // go to the next filter in the filter chain
+        // chuyển đến bộ lọc tiếp theo trong chuỗi bộ lọc
         chain.doFilter(request, response);
     }
 

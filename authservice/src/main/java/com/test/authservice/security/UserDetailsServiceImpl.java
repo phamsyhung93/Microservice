@@ -13,7 +13,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-@Service
+@Service //Nó phải được chú thích bằng @Service.
 public class UserDetailsServiceImpl implements UserDetailsService {
     @Autowired
     private BCryptPasswordEncoder encoder;
@@ -23,7 +23,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
         // hard coding the users. All passwords must be encoded.
         final List<AppUser> users = Arrays.asList(
-                new AppUser(1, "tubean", encoder.encode("12345"), "USER"),
+                new AppUser(1, "hung", encoder.encode("12345"), "USER"),
                 new AppUser(2, "admin", encoder.encode("12345"), "ADMIN")
         );
 
@@ -31,22 +31,22 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         for(AppUser appUser: users) {
             if(appUser.getUsername().equals(username)) {
 
-                // Remember that Spring needs roles to be in this format: "ROLE_" + userRole (i.e. "ROLE_ADMIN")
-                // So, we need to set it to that format, so we can verify and compare roles (i.e. hasRole("ADMIN")).
+                // Hãy nhớ rằng Spring cần các vai trò ở định dạng này: "ROLE_" + userRole (tức là "ROLE_ADMIN")
+                // Vì vậy, chúng tôi cần đặt nó thành định dạng đó, để chúng tôi có thể xác minh và so sánh các vai trò (tức là hasRole ("ADMIN")).
                 List<GrantedAuthority> grantedAuthorities = AuthorityUtils
-                         .commaSeparatedStringToAuthorityList("ROLE_" + appUser.getRole());
+                        .commaSeparatedStringToAuthorityList("ROLE_" + appUser.getRole());
 
-                // The "User" class is provided by Spring and represents a model class for user to be returned by UserDetailsService
-                // And used by auth manager to verify and check user authentication.
+                // Lớp "Người dùng" được cung cấp bởi Spring và đại diện cho một lớp mô hình cho người dùng được UserDetailsService trả về
+                // Và được sử dụng bởi trình quản lý auth để xác minh và kiểm tra xác thực người dùng.
                 return new User(appUser.getUsername(), appUser.getPassword(), grantedAuthorities);
             }
         }
 
-        // If user not found. Throw this exception.
+        // Nếu người dùng không được tìm thấy. Bỏ trường hợp ngoại lệ này.
         throw new UsernameNotFoundException("Username: " + username + " not found");
     }
 
-    // A (temporary) class represent the user saved in the database.
+    // Một lớp (tạm thời) đại diện cho người dùng được lưu trong cơ sở dữ liệu.
     private static class AppUser {
         private Integer id;
         private String username, password;

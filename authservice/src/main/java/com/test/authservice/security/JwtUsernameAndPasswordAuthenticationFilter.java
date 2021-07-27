@@ -25,7 +25,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
 
 
 public class JwtUsernameAndPasswordAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
-    // We use auth manager to validate the user credentials
+    // Chúng tôi sử dụng trình quản lý xác thực để xác thực thông tin đăng nhập của người dùng
     private AuthenticationManager authManager;
 
     private final JwtConfig jwtConfig;
@@ -34,8 +34,8 @@ public class JwtUsernameAndPasswordAuthenticationFilter extends UsernamePassword
         this.authManager = authManager;
         this.jwtConfig = jwtConfig;
 
-        // By default, UsernamePasswordAuthenticationFilter listens to "/login" path.
-        // In our case, we use "/auth". So, we need to override the defaults.
+        // Theo mặc định, UsernamePasswordAuthenticationFilter lắng nghe đường dẫn "/ login".
+        // Trong trường hợp của chúng tôi, chúng tôi sử dụng "/ auth". Vì vậy, chúng ta cần ghi đè các giá trị mặc định.
         this.setRequiresAuthenticationRequestMatcher(new AntPathRequestMatcher(jwtConfig.getUri(), "POST"));
     }
 
@@ -45,14 +45,14 @@ public class JwtUsernameAndPasswordAuthenticationFilter extends UsernamePassword
 
         try {
 
-            // 1. Get credentials from request
+            // 1. Nhận thông tin đăng nhập từ yêu cầu
             UserCredentials creds = new ObjectMapper().readValue(request.getInputStream(), UserCredentials.class);
 
-            // 2. Create auth object (contains credentials) which will be used by auth manager
+            // 2. Tạo đối tượng xác thực (chứa thông tin đăng nhập) sẽ được người quản lý xác thực sử dụng
             UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                     creds.getUsername(), creds.getPassword(), Collections.emptyList());
 
-            // 3. Authentication manager authenticate the user, and use UserDetialsServiceImpl::loadUserByUsername() method to load the user.
+            // 3.Trình quản lý xác thực xác thực người dùng và sử dụng phương thức UserDetialsServiceImpl :: loadUserByUsername () để tải người dùng.
             return authManager.authenticate(authToken);
 
         } catch (IOException e) {
@@ -60,16 +60,17 @@ public class JwtUsernameAndPasswordAuthenticationFilter extends UsernamePassword
         }
     }
 
-    // Upon successful authentication, generate a token.
-    // The 'auth' passed to successfulAuthentication() is the current authenticated user.  @Override
+    // Sau khi xác thực thành công, hãy tạo mã thông báo.
+    // 'Auth' được chuyển cho thành côngAuthentication () là người dùng được xác thực hiện tại.
+    @Override
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
                                             Authentication auth) throws IOException, ServletException {
 
         Long now = System.currentTimeMillis();
         String token = Jwts.builder()
                 .setSubject(auth.getName())
-                // Convert to list of strings.
-                // This is important because it affects the way we get them back in the Gateway.
+                // Chuyển đổi sang danh sách các chuỗi.
+                // Điều này rất quan trọng vì nó ảnh hưởng đến cách chúng tôi đưa chúng trở lại Gateway.
                 .claim("authorities", auth.getAuthorities().stream()
                         .map(GrantedAuthority::getAuthority).collect(Collectors.toList()))
                 .setIssuedAt(new Date(now))
@@ -77,11 +78,11 @@ public class JwtUsernameAndPasswordAuthenticationFilter extends UsernamePassword
                 .signWith(SignatureAlgorithm.HS512, jwtConfig.getSecret().getBytes())
                 .compact();
 
-        // Add token to header
+        // Thêm mã thông báo vào tiêu đề
         response.addHeader(jwtConfig.getHeader(), jwtConfig.getPrefix() + token);
     }
 
-    // A (temporary) class just to represent the user credentials
+    // Một lớp (tạm thời) chỉ để đại diện cho thông tin đăng nhập của người dùng
     private static class UserCredentials {
         private String username, password;
 
